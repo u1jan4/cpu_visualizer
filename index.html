@@ -1,42 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CPU Scheduling Visualizer</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>CPU Scheduling Visualizer</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
 
-  <!-- Link the CSS file -->
-  <link rel="stylesheet" href="style.css">
-
-  <!-- Link the JS file -->
-  <script src="script.js" defer></script>
 </head>
 <body>
-
-  <div class="container">
+<div class="container">
     <h1>CPU Scheduling Visualizer</h1>
 
-    <div id="process-inputs">
-      <div class="input-section">
-        <input type="text" id="pid" placeholder="PID (e.g. P1)">
-        <input type="number" id="arrival" placeholder="Arrival">
-        <input type="number" id="burst" placeholder="Burst">
-        <input type="number" id="priority" placeholder="Priority">
-        <button onclick="addProcess()">Add</button>
-      </div>
+    <div id="process-inputs" class="input-section">
+        <div class="input-field">
+            <label for="pid">Process ID</label>
+            <input type="text" id="pid" placeholder="e.g. P1">
+        </div>
+
+        <div class="input-field">
+            <label for="arrival">Arrival Time</label>
+            <input type="number" id="arrival" placeholder="0">
+        </div>
+
+        <div class="input-field">
+            <label for="burst">Burst Time</label>
+            <input type="number" id="burst" placeholder="5">
+        </div>
+
+        <div class="input-field">
+            <label for="priority">Priority</label>
+            <input type="number" id="priority" placeholder="1">
+        </div>
+
+        <div class="input-field">
+            <label>&nbsp;</label>
+            <button onclick="addProcess()">Add</button>
+        </div>
     </div>
 
-    <select id="algorithm">
-      <option value="fcfs">First Come First Serve (FCFS)</option>
-      <option value="priority">Priority Scheduling</option>
-      <option value="rr">Round Robin</option>
-    </select>
-    <input type="number" id="quantum" placeholder="Quantum (for RR)">
-    <button onclick="simulate()">Simulate</button>
+
+    <div id="task-list-container">
+        <h3>Process List</h3>
+        <ul id="task-list"></ul>
+    </div>
+
+    <div class="algorithm-section">
+        <select id="algorithm">
+            <option value="fcfs">First Come First Serve (FCFS)</option>
+            <option value="sjf">Shortest Job First (SJF)</option>
+            <option value="srtf">Shortest Remaining Time First (SRTF)</option>
+            <option value="priority">Priority Scheduling</option>
+            <option value="rr">Round Robin</option>
+        </select>
+        <input type="number" id="quantum" placeholder="Quantum (for RR)">
+        <button onclick="simulate()">Simulate</button>
+    </div>
 
     <div id="gantt-chart"></div>
     <div id="results"></div>
-  </div>
-
+</div>
 </body>
 </html>
