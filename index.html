@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CPU Scheduling Visualizer</title>
+
+  <!-- Link the CSS file -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Link the JS file -->
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+  <div class="container">
+    <h1>CPU Scheduling Visualizer</h1>
+
+    <div id="process-inputs">
+      <div class="input-section">
+        <input type="text" id="pid" placeholder="PID (e.g. P1)">
+        <input type="number" id="arrival" placeholder="Arrival">
+        <input type="number" id="burst" placeholder="Burst">
+        <input type="number" id="priority" placeholder="Priority">
+        <button onclick="addProcess()">Add</button>
+      </div>
+    </div>
+
+    <select id="algorithm">
+      <option value="fcfs">First Come First Serve (FCFS)</option>
+      <option value="priority">Priority Scheduling</option>
+      <option value="rr">Round Robin</option>
+    </select>
+    <input type="number" id="quantum" placeholder="Quantum (for RR)">
+    <button onclick="simulate()">Simulate</button>
+
+    <div id="gantt-chart"></div>
+    <div id="results"></div>
+  </div>
+
+</body>
+</html>
