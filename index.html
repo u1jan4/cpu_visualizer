@@ -61,14 +61,18 @@
     <div id="algorithm-info" class="algorithm-info"></div>
 
 
-    <div id="current-time" style="margin-bottom:5px; font-weight:bold;">Time: 0</div>
-    <div id="gantt-chart"></div>
-    <div id="waiting-queue">
-        <strong>Waiting Queue:</strong>
-        <span id="queue-content">[]</span>
-    </div>
+    <div id="current-time"></div>
+<div id="current-process"></div>
+<div id="queue-content"></div>
+<div id="gantt-chart" style="display:flex"></div>
 
-    <div id="results"></div>
+<table id="process-table" border="1">
+  <thead>
+    <tr><th>PID</th><th>Arrival</th><th>Burst</th><th>Remaining</th></tr>
+  </thead>
+  <tbody id="process-table-body"></tbody>
+</table>
+
 
 </div>
 </body>
