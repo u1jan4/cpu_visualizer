@@ -39,6 +39,52 @@ function simulate() {
   renderGantt(gantt);
 }
 
+function addProcess() {
+  const pid = document.getElementById("pid").value;
+  const arrival = parseInt(document.getElementById("arrival").value);
+  const burst = parseInt(document.getElementById("burst").value);
+  const priority = parseInt(document.getElementById("priority").value) || 0;
+
+  if (!pid || isNaN(arrival) || isNaN(burst)) {
+    alert("Please fill all required fields!");
+    return;
+  }
+
+  processes.push({ pid, arrival, burst, priority });
+
+  // Update visual task list
+  renderTaskList();
+
+  // Clear input fields
+  document.getElementById("pid").value = "";
+  document.getElementById("arrival").value = "";
+  document.getElementById("burst").value = "";
+  document.getElementById("priority").value = "";
+}
+function renderTaskList() {
+  const taskList = document.getElementById("task-list");
+  taskList.innerHTML = ""; // clear previous list
+
+  processes.forEach((p, index) => {
+    const li = document.createElement("li");
+    li.textContent = `${p.pid} — Arrival: ${p.arrival}, Burst: ${p.burst}, Priority: ${p.priority}`;
+    li.style.padding = "4px 0";
+
+    // Remove button
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "Remove";
+    removeBtn.style.marginLeft = "10px";
+    removeBtn.style.padding = "2px 6px";
+    removeBtn.style.fontSize = "12px";
+    removeBtn.onclick = () => {
+      processes.splice(index, 1);
+      renderTaskList();
+    };
+
+    li.appendChild(removeBtn);
+    taskList.appendChild(li);
+  });
+}
 
 function fcfs(procList) {
   let processes = [...procList].sort((a, b) => a.arrival - b.arrival);
