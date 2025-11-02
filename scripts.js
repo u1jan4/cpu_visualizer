@@ -19,13 +19,16 @@ function addProcess() {
   document.getElementById("burst").value = "";
   document.getElementById("priority").value = "";
 }
-
 function simulate() {
   const algo = document.getElementById("algorithm").value;
   let gantt = [];
 
   if (algo === "fcfs") {
     gantt = fcfs(processes);
+  } else if (algo === "sjf") {
+    gantt = sjf(processes);
+  } else if (algo === "srtf") {
+    gantt = srtf(processes);
   } else if (algo === "priority") {
     gantt = priorityScheduling(processes);
   } else if (algo === "rr") {
@@ -35,6 +38,7 @@ function simulate() {
 
   renderGantt(gantt);
 }
+
 
 function fcfs(procList) {
   let processes = [...procList].sort((a, b) => a.arrival - b.arrival);
@@ -83,6 +87,64 @@ function roundRobin(procList, quantum) {
         time += exec;
         p.remaining -= exec;
       }
+    }
+  }
+  return gantt;
+}
+function sjf(procList) {
+  let processes = [...procList].sort((a, b) => a.arrival - b.arrival);
+  let time = 0, completed = [], gantt = [];
+
+  while (completed.length < processes.length) {
+    let available = processes.filter(p => p.arrival <= time && !completed.includes(p));
+    if (available.length === 0) {
+      time++;
+      continue;
+    }
+
+    // Select process with smallest burst time
+    let next = available.sort((a, b) => a.burst - b.burst)[0];
+    let start = time;
+    let end = start + next.burst;
+    gantt.push({ pid: next.pid, start, end });
+    completed.push(next);
+    time = end;
+  }
+  return gantt;
+}
+function srtf(procList) {
+  let processes = [...procList].map(p => ({ ...p, remaining: p.burst }));
+  let time = 0, completed = 0, gantt = [], current = null, lastTime = 0;
+
+  while (completed < processes.length) {
+    let available = processes.filter(p => p.arrival <= time && p.remaining > 0);
+    if (available.length === 0) {
+      time++;
+      continue;
+    }
+
+    // Select process with shortest remaining time
+    available.sort((a, b) => a.remaining - b.remaining);
+    let next = available[0];
+
+    // Log Gantt when process switches
+    if (current !== next) {
+      if (current !== null && lastTime < time) {
+        gantt.push({ pid: current.pid, start: lastTime, end: time });
+      }
+      current = next;
+      lastTime = time;
+    }
+
+    // Run for 1 unit of time
+    next.remaining--;
+    time++;
+
+    // If process finishes
+    if (next.remaining === 0) {
+      gantt.push({ pid: next.pid, start: lastTime, end: time });
+      completed++;
+      current = null;
     }
   }
   return gantt;
