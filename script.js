@@ -84,164 +84,291 @@ function simulate() {
   else if (algo === "priority") gantt = priorityScheduling(processes);
   else if (algo === "rr") gantt = roundRobin(processes, quantum);
 
+  const metrics = calculateMetrics(gantt, processes);
+  renderMetrics(metrics);
+
   renderGanttAnimated(gantt);
 }
+function calculateMetrics(gantt, procs) {
+  const metrics = {};
+  const finishTimes = {};
+
+  gantt.forEach(block => finishTimes[block.pid] = block.end);
+
+  let totalBurst = 0;
+  procs.forEach(p => {
+    const tat = finishTimes[p.pid] - p.arrival;
+    const wt = tat - p.burst;
+    metrics[p.pid] = { waitingTime: wt, turnaroundTime: tat };
+    totalBurst += p.burst;
+  });
+
+  const totalTime = gantt[gantt.length-1].end;
+  const cpuUtil = ((totalBurst / totalTime) * 100).toFixed(2);
+
+  metrics.cpuUtilization = cpuUtil;
+  metrics.totalTime = totalTime;
+
+  return metrics;
+}
+function renderMetrics(metrics) {
+  const tbody = document.querySelector("#metrics-table tbody");
+  tbody.innerHTML = "";
+
+  processes.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${p.pid}</td>
+      <td>${metrics[p.pid].waitingTime}</td>
+      <td>${metrics[p.pid].turnaroundTime}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("cpu-utilization").textContent =
+    `CPU Utilization: ${metrics.cpuUtilization}% | Total Time: ${metrics.totalTime}`;
+}
+
 
 
 function fcfs(procList) {
   let sorted = [...procList].sort((a,b)=>a.arrival-b.arrival);
-  let time=0, gantt=[];
-  for(let p of sorted){
-    let start=Math.max(time,p.arrival);
-    let end=start+p.burst;
-    gantt.push({pid:p.pid,start,end});
-    time=end;
+  let time = 0, gantt = [];
+
+  for (let p of sorted) {
+    if (time < p.arrival) {
+      gantt.push({ pid: "Idle", start: time, end: p.arrival });
+      time = p.arrival;
+    }
+    let start = time;
+    let end = start + p.burst;
+    gantt.push({ pid: p.pid, start, end });
+    time = end;
   }
   return gantt;
 }
 
 function sjf(procList) {
   let procs = [...procList].map(p => ({ ...p }));
-  let time=0, completed=[], gantt=[];
-  while(completed.length<procs.length){
-    let available = procs.filter(p=>p.arrival<=time && !completed.includes(p));
-    if(!available.length){time++; continue;}
-    let next = available.reduce((prev,curr)=>curr.burst<prev.burst?curr:prev);
-    let start = Math.max(time,next.arrival);
+  let time = 0, completed = [], gantt = [];
+
+  while (completed.length < procs.length) {
+    let available = procs.filter(p => p.arrival <= time && !completed.includes(p));
+    if (!available.length) {
+      const nextArrival = Math.min(...procs.filter(p => !completed.includes(p)).map(p => p.arrival));
+      gantt.push({ pid: "Idle", start: time, end: nextArrival });
+      time = nextArrival;
+      continue;
+    }
+    let next = available.reduce((prev, curr) => curr.burst < prev.burst ? curr : prev);
+    let start = time;
     let end = start + next.burst;
-    gantt.push({pid: next.pid,start,end});
-    time=end; completed.push(next);
+    gantt.push({ pid: next.pid, start, end });
+    completed.push(next);
+    time = end;
   }
+
   return gantt;
 }
 
+
 function srtf(procList) {
-  let procs = procList.map(p => ({...p, remaining: p.burst}));
-  let time=0, completed=0, gantt=[];
+  let procs = procList.map(p => ({ ...p, remaining: p.burst }));
+  let time = 0, completed = 0, gantt = [];
   const n = procs.length;
-  while(completed<n){
-    let available = procs.filter(p => p.arrival<=time && p.remaining>0);
-    if(!available.length){time++; continue;}
-    let next = available.reduce((prev,curr)=>curr.remaining<prev.remaining?curr:prev);
-    gantt.push({pid: next.pid,start: time,end: time+1});
+
+  while (completed < n) {
+    let available = procs.filter(p => p.arrival <= time && p.remaining > 0);
+
+    if (available.length === 0) {
+
+      const nextArrival = Math.min(...procs.filter(p => p.remaining > 0).map(p => p.arrival));
+      gantt.push({ pid: "Idle", start: time, end: nextArrival });
+      time = nextArrival;
+      continue;
+    }
+
+    let next = available.reduce((prev, curr) => curr.remaining < prev.remaining ? curr : prev);
+
+    gantt.push({ pid: next.pid, start: time, end: time + 1 });
     next.remaining -= 1;
-    if(next.remaining===0) completed++;
-    time++;
+    time += 1;
+
+    if (next.remaining === 0) completed++;
   }
 
-  let merged=[];
-  for(let i=0;i<gantt.length;i++){
-    if(merged.length===0) merged.push({...gantt[i]});
-    else{
-      let last=merged[merged.length-1];
-      if(last.pid===gantt[i].pid && last.end===gantt[i].start) last.end=gantt[i].end;
-      else merged.push({...gantt[i]});
+  let merged = [];
+  for (let i = 0; i < gantt.length; i++) {
+    if (merged.length === 0) merged.push({ ...gantt[i] });
+    else {
+      let last = merged[merged.length - 1];
+      if (last.pid === gantt[i].pid && last.end === gantt[i].start) last.end = gantt[i].end;
+      else merged.push({ ...gantt[i] });
     }
   }
+
   return merged;
 }
 
-function priorityScheduling(procList){
-  let procs=[...procList].sort((a,b)=>a.arrival-b.arrival), time=0, completed=[], gantt=[];
-  while(completed.length<procs.length){
-    let available = procs.filter(p=>p.arrival<=time && !completed.includes(p));
-    if(!available.length){time++; continue;}
+
+function priorityScheduling(procList) {
+  let procs = [...procList].sort((a,b)=>a.arrival-b.arrival),
+      time = 0,
+      completed = [],
+      gantt = [];
+
+  while (completed.length < procs.length) {
+    let available = procs.filter(p => p.arrival <= time && !completed.includes(p));
+
+    if (!available.length) {
+      const nextArrival = Math.min(...procs.filter(p => !completed.includes(p)).map(p => p.arrival));
+      if (time < nextArrival) {
+        gantt.push({ pid: "Idle", start: time, end: nextArrival });
+        time = nextArrival;
+      }
+      continue;
+    }
     let next = available.sort((a,b)=>a.priority-b.priority)[0];
-    let start=time,end=start+next.burst;
-    gantt.push({pid:next.pid,start,end});
-    completed.push(next); time=end;
+    let start = time, end = start + next.burst;
+    gantt.push({ pid: next.pid, start, end });
+    completed.push(next);
+    time = end;
   }
+
   return gantt;
 }
 
-function roundRobin(procList, quantum){
-  let procs = procList.map(p=>({...p, remaining: p.burst})), time=0, gantt=[];
-  let n=procs.length, completed=0;
-  while(completed<n){
-    let executed=false;
-    for(let p of procs){
-      if(p.arrival<=time && p.remaining>0){
-        let exec=Math.min(quantum,p.remaining);
-        gantt.push({pid: p.pid, start: time, end: time+exec});
+
+function roundRobin(procList, quantum) {
+  let procs = procList.map(p => ({ ...p, remaining: p.burst }));
+  let time = 0, gantt = [], completed = 0;
+  const n = procs.length;
+
+  while (completed < n) {
+    let executed = false;
+
+    for (let p of procs) {
+      if (p.arrival <= time && p.remaining > 0) {
+        const exec = Math.min(quantum, p.remaining);
+        gantt.push({ pid: p.pid, start: time, end: time + exec });
         p.remaining -= exec;
         time += exec;
-        executed=true;
-        if(p.remaining===0) completed++;
+        executed = true;
+
+        if (p.remaining === 0) completed++;
       }
     }
-    if(!executed) time++;
+
+    if (!executed) {
+      const nextArrival = Math.min(...procs.filter(p => p.remaining > 0).map(p => p.arrival));
+      if (time < nextArrival) {
+        gantt.push({ pid: "Idle", start: time, end: nextArrival });
+        time = nextArrival;
+      } else {
+        time++;
+      }
+    }
   }
+
   return gantt;
 }
 
 
-async function renderGanttAnimated(gantt){
-  const chart=document.getElementById("gantt-chart");
-  const currentTimeDiv=document.getElementById("current-time");
-  const queueDiv=document.getElementById("queue-content");
-  const currentProcDiv=document.getElementById("current-process");
-  const tableBody=document.getElementById("process-table-body");
 
-  chart.innerHTML=""; queueDiv.innerHTML=""; currentTimeDiv.textContent="Time: 0"; currentProcDiv.textContent="CPU Idle";
+async function renderGanttAnimated(gantt, speed = 1) {
+  const chart = document.getElementById("gantt-chart");
+  const currentTimeDiv = document.getElementById("current-time");
+  const queueDiv = document.getElementById("queue-content");
+  const currentProcDiv = document.getElementById("current-process");
+  const tableBody = document.getElementById("process-table-body");
+
+  chart.innerHTML = "";
+  queueDiv.innerHTML = "";
+  currentTimeDiv.textContent = "Time: 0";
+  currentProcDiv.textContent = "CPU Idle";
   renderProcessTable();
 
-  const colors={};
-  const palette=["#007bff","#28a745","#ff9800","#9c27b0","#e91e63","#00bcd4","#795548"];
-  processes.forEach((p,i)=>colors[p.pid]=palette[i%palette.length]);
+  const colors = {};
+  const palette = ["#007bff","#28a745","#ff9800","#9c27b0","#e91e63","#00bcd4","#795548"];
+  processes.forEach((p,i) => colors[p.pid] = palette[i % palette.length]);
 
-  const widthPerUnit=40;
+  const widthPerUnit = 40;
 
-  for(let block of gantt){
-   const div = document.createElement("div");
-div.className = "process-block";
-div.style.width = "0px";
-div.style.height = "40px";
-div.style.background = colors[block.pid];
-div.style.border = "1px solid #333";
-div.style.color = "#fff";
-div.style.display = "flex";
-div.style.alignItems = "center";
-div.style.justifyContent = "center";
-div.style.fontWeight = "bold";
-div.style.fontSize = "16px";
-div.textContent = block.pid;
-chart.appendChild(div);
-
-
-    const duration=Math.max((block.end-block.start)*400, 400);
-    const totalWidth=(block.end-block.start)*widthPerUnit;
-
-
-    const currentProcess = processes.find(p=>p.pid===block.pid);
-    if(currentProcess) currentProcess.remaining -= (block.end-block.start);
-    renderProcessTable();
-
-    await animateBlock(div,totalWidth,duration,(elapsedUnits)=>{
-      const currentTime=block.start+elapsedUnits;
-      currentTimeDiv.textContent=`Time: ${currentTime}`;
-      currentProcDiv.textContent=`CPU Running: ${block.pid}`;
-
-
-      const waiting = processes.filter(p=>p.remaining>0 && p.arrival<=currentTime && p.pid!==block.pid);
-      queueDiv.innerHTML="";
-      waiting.forEach(w=>{
-        const wdiv=document.createElement("div");
-        wdiv.style.display="inline-block";
-        wdiv.style.width="40px"; wdiv.style.height="30px";
-        wdiv.style.background=colors[w.pid]; wdiv.style.margin="2px";
-        wdiv.style.color="#fff"; wdiv.style.textAlign="center"; wdiv.style.lineHeight="30px";
-        wdiv.textContent=w.pid;
-        queueDiv.appendChild(wdiv);
-      });
-    });
-
-    div.style.opacity="1";
+  for (let block of gantt) {
+    const div = document.createElement("div");
+    div.className = "process-block";
+    div.style.width = "0px";
+    div.style.height = "40px";
+    div.style.background = colors[block.pid];
+    div.style.border = "2px solid #333";
+    div.style.borderRadius = "5px";
+    div.style.display = "flex";
+    div.style.alignItems = "center";
+    div.style.justifyContent = "center";
+    div.style.fontWeight = "bold";
+    div.style.fontSize = "16px";
+    div.style.color = "#fff";
+    div.style.boxShadow = "0 0 5px transparent";
+    div.textContent = block.pid;
+    if (block.pid === "Idle") {
+    div.style.background = "#ccc";
+    div.style.color = "#000";
+    div.textContent = "Idle";
+  } else {
+    const colors = {};
+    const palette = ["#007bff","#28a745","#ff9800","#9c27b0","#e91e63","#00bcd4","#795548"];
+    processes.forEach((p,i)=>colors[p.pid]=palette[i%palette.length]);
+    div.style.background = colors[block.pid];
+    div.style.color = "#fff";
+    div.textContent = block.pid;
   }
 
-  currentTimeDiv.textContent=`Time: ${gantt[gantt.length-1].end}`;
-  currentProcDiv.textContent="CPU Idle";
-  queueDiv.innerHTML="";
+    chart.appendChild(div);
+
+    const duration = Math.max((block.end - block.start) * 400 / speed, 200);
+    const totalWidth = (block.end - block.start) * widthPerUnit;
+
+    const currentProcess = processes.find(p => p.pid === block.pid);
+
+    await animateBlock(div, totalWidth, duration, (elapsedUnits) => {
+      const currentTime = block.start + elapsedUnits;
+      currentTimeDiv.textContent = `Time: ${currentTime}`;
+      currentProcDiv.textContent = `CPU Running: ${block.pid}`;
+
+      div.style.boxShadow = "0 0 10px #fff";
+
+      const waiting = processes.filter(p => p.remaining > 0 && p.arrival <= currentTime && p.pid !== block.pid);
+      queueDiv.innerHTML = "";
+      waiting.forEach((w, idx) => {
+        const wdiv = document.createElement("div");
+        wdiv.style.display = "inline-block";
+        wdiv.style.width = "40px";
+        wdiv.style.height = "30px";
+        wdiv.style.background = colors[w.pid];
+        wdiv.style.margin = "2px";
+        wdiv.style.color = "#fff";
+        wdiv.style.textAlign = "center";
+        wdiv.style.lineHeight = "30px";
+        wdiv.style.borderRadius = "4px";
+        wdiv.style.transition = "transform 0.2s";
+        wdiv.style.transform = `translateY(${idx*0}px)`; // Can animate sliding
+        wdiv.textContent = w.pid;
+        queueDiv.appendChild(wdiv);
+      });
+
+      if (currentProcess) currentProcess.remaining -= (block.end - block.start);
+      renderProcessTable();
+    });
+
+    div.style.boxShadow = "0 0 0px transparent";
+    div.style.opacity = "0.8";
+  }
+
+  currentTimeDiv.textContent = `Time: ${gantt[gantt.length-1].end}`;
+  currentProcDiv.textContent = "CPU Idle";
+  queueDiv.innerHTML = "";
 }
+
 
 
 function animateBlock(element,targetWidth,duration,onProgress){

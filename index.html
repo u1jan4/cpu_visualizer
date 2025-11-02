@@ -54,7 +54,9 @@
             <option value="rr">Round Robin</option>
         </select>
         <input type="number" id="quantum" placeholder="Quantum (for RR)">
-        <button onclick="simulate()">Simulate</button>
+        <div class="simulate">
+            <button onclick="simulate()">Simulate</button>
+        </div>
     </div>
 
 
@@ -62,17 +64,35 @@
 
 
     <div id="current-time"></div>
-<div id="current-process"></div>
-<div id="queue-content"></div>
-<div id="gantt-chart" style="display:flex"></div>
+    <div id="current-process"></div>
+    <div id="queue-content"></div>
+    <div id="gantt-chart" style="display:flex"></div>
 
-<table id="process-table" border="1">
-  <thead>
-    <tr><th>PID</th><th>Arrival</th><th>Burst</th><th>Remaining</th></tr>
-  </thead>
-  <tbody id="process-table-body"></tbody>
-</table>
 
+    <table id="process-table" border="1">
+        <thead>
+        <tr>
+            <th>PID</th>
+            <th>Arrival</th>
+            <th>Burst</th>
+            <th>Remaining</th>
+        </tr>
+        </thead>
+        <tbody id="process-table-body"></tbody>
+    </table>
+
+    <h3>Metrics</h3>
+    <table id="metrics-table" border="1">
+        <thead>
+        <tr>
+            <th>PID</th>
+            <th>Waiting Time</th>
+            <th>Turnaround Time</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <p id="cpu-utilization"></p>
 
 </div>
 </body>

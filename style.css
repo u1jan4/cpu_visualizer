@@ -1,131 +1,206 @@
+/* General page styling */
 body {
-  font-family: Arial, sans-serif;
-  margin: 40px;
-  background: #f7f9fc;
-  color: #333;
-}
-
-h1 {
-  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f5f5f5;
+  margin: 0;
+  padding: 20px;
 }
 
 .container {
-  max-width: 900px;
-  margin: auto;
-  background: white;
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 10px;
   padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
 }
 
+button{
+margin-top: 5px;
+  background-color: #DB0F00;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  padding: 6px;
+  transition: 0.2s;
+  margin:7px;
+}
+button:hover {
+  background-color:#9C0D00 ;
+}
+/* Headings */
+h1 {
+  text-align: center;
+  color: #333;
+}
+
+h3 {
+  margin-top: 20px;
+  color: #444;
+}
+
+/* Input section */
 .input-section {
   display: flex;
-  gap: 15px;
-  align-items: flex-end;
-  margin-bottom: 15px;
   flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
 .input-field {
   display: flex;
   flex-direction: column;
+  flex: 1 1 120px;
 }
 
-.input-field label {
-  font-size: 14px;
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #444;
+.input-field input {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
 
-input {
-  width: 100px;
-  padding: 5px;
-}
-
-button {
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 8px 12px;
+.input-field button {
+  margin-top: 5px;
+  background-color: #00B012;
+  color: #fff;
   cursor: pointer;
-}
-
-button:hover {
-  background: #0056b3;
-}
-
-select {
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
   padding: 6px;
+  transition: 0.2s;
 }
 
+.input-field button:hover {
+  background-color: #007D0E;
+}
+.simulate button {
+  margin-top: 5px;
+  background-color: #00B012;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+  border: none;
+  border-radius: 5px;
+  padding: 6px;
+  transition: 0.2s;
+}
+
+.simulate button:hover {
+  background-color: #007D0E;
+}
+/* Algorithm selector */
 .algorithm-section {
   margin-bottom: 20px;
   display: flex;
+  align-items: center;
   gap: 10px;
-  align-items: center;
 }
 
-#task-list-container {
-  margin-top: 20px;
-  background: #f0f4f8;
-  padding: 10px 15px;
-  border-radius: 8px;
+.algorithm-section select,
+.algorithm-section input,
+.algorithm-section button {
+  padding: 6px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
 }
 
-#task-list li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
+/* Info text */
+.algorithm-info {
+  margin-top: 5px;
+  color: #555;
+  font-style: italic;
 }
 
-#task-list li button {
-  background: #dc3545;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-  padding: 2px 6px;
-}
-
-#task-list li button:hover {
-  background: #a71d2a;
-}
-
+/* Gantt Chart */
 #gantt-chart {
   display: flex;
-  margin-top: 25px;
-  border-top: 2px solid #333;
-  padding-top: 10px;
-  flex-wrap: wrap;
+  height: 50px;
+  margin: 10px 0;
+  overflow-x: auto;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fafafa;
+  align-items: center;
+  padding: 5px;
 }
 
 .process-block {
-  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  border-radius: 6px;
-  margin-right: 4px;
+  margin-right: 2px;
   font-weight: bold;
+  font-size: 14px;
+  border-radius: 4px;
+  color: #fff;
+  min-width: 40px;
+  height: 40px;
+  transition: width 0.3s ease;
 }
 
-#results {
-  margin-top: 20px;
-  background: #f0f4f8;
-  padding: 10px;
-  border-radius: 6px;
+.process-block[idle] {
+  background: #ccc;
+  color: #000;
 }
-.algorithm-info {
+
+/* Current CPU and queue */
+#current-process {
+  font-weight: bold;
   margin-top: 10px;
-  padding: 10px;
-  background: #f0f4f8;
-  border-left: 4px solid #007bff;
-  border-radius: 6px;
-  font-size: 14px;
-  color: #333;
+}
+
+#queue-content {
+  margin-top: 5px;
+  display: flex;
+  gap: 4px;
+}
+
+#queue-content div {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 30px;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+table th, table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+table th {
+  background-color: #007bff;
+  color: #fff;
+}
+
+table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+table tr.highlight-high-wt {
+  background-color: #ffcccc;
+}
+
+table tr.highlight-low-tat {
+  background-color: #ccffcc;
+}
+
+/* CPU utilization text */
+#cpu-utilization {
+  font-weight: bold;
+  margin-top: 10px;
 }
