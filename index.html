@@ -46,7 +46,7 @@
     </div>
 
     <div class="algorithm-section">
-        <select id="algorithm">
+        <select id="algorithm" onchange="showAlgorithmInfo()">
             <option value="fcfs">First Come First Serve (FCFS)</option>
             <option value="sjf">Shortest Job First (SJF)</option>
             <option value="srtf">Shortest Remaining Time First (SRTF)</option>
@@ -57,8 +57,19 @@
         <button onclick="simulate()">Simulate</button>
     </div>
 
+
+    <div id="algorithm-info" class="algorithm-info"></div>
+
+
+    <div id="current-time" style="margin-bottom:5px; font-weight:bold;">Time: 0</div>
     <div id="gantt-chart"></div>
+    <div id="waiting-queue">
+        <strong>Waiting Queue:</strong>
+        <span id="queue-content">[]</span>
+    </div>
+
     <div id="results"></div>
+
 </div>
 </body>
 </html>
