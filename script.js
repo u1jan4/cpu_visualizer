@@ -1,15 +1,8 @@
 let processes = [];
 
 const COLOR_PALETTE = [
-  "#1976D2",
-  "#388E3C",
-  "#F57C00",
-  "#7B1FA2",
-  "#C62828",
-  "#00897B",
-  "#5D4037",
-  "#FBC02D",
-  "#455A64"
+  "#1976D2", "#388E3C", "#F57C00", "#7B1FA2", "#C62828",
+  "#00897B", "#5D4037", "#FBC02D", "#455A64"
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -17,9 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (saved) {
     processes = JSON.parse(saved);
     assignColors();
-    renderTaskList();
-    buildLegend();
-    renderProcessTable();
+    renderAll();
   }
   showAlgorithmInfo();
 });
@@ -46,16 +37,24 @@ function addProcess() {
   processes.push({ pid, arrival, burst, priority, remaining: burst });
   assignColors();
   saveProcesses();
+  clearInputs("pid", "arrival", "burst", "priority");
+  renderAll();
+}
+
+function clearInputs(...ids) {
+  ids.forEach(id => document.getElementById(id).value = "");
+}
+
+function renderAll() {
   renderTaskList();
   buildLegend();
-
-  ["pid","arrival","burst","priority"].forEach(id => document.getElementById(id).value = "");
   renderProcessTable();
 }
 
 function renderTaskList() {
   const taskList = document.getElementById("task-list");
   taskList.innerHTML = "";
+
   processes.forEach(p => {
     const li = document.createElement("li");
     li.innerHTML = `<strong style="color:${p.color}">${p.pid}</strong> — Arrival: ${p.arrival}, Burst: ${p.burst}, Priority: ${p.priority}`;
@@ -65,26 +64,25 @@ function renderTaskList() {
     removeBtn.onclick = () => {
       processes = processes.filter(proc => proc !== p);
       saveProcesses();
-      renderTaskList();
-      buildLegend();
+      renderAll();
     };
+
     li.appendChild(removeBtn);
     taskList.appendChild(li);
   });
-  buildLegend();
 }
 
 function showAlgorithmInfo() {
   const algo = document.getElementById("algorithm").value;
   const infoDiv = document.getElementById("algorithm-info");
   const infoTexts = {
-    fcfs: "First Come First Serve: The CPU executes the process that arrived first. Simple but can cause long waits.",
-    sjf: "Shortest Job First: Chooses the process with the smallest burst time. Efficient but can cause starvation.",
-    srtf: "Shortest Remaining Time First: Like SJF, but can interrupt if a shorter process arrives.",
-    priority: "Priority Scheduling: Chooses the process with the highest priority (smallest number).",
-    rr: "Round Robin: Gives each process a small slice of CPU time in turns — great for fairness."
+    fcfs: "First Come First Serve: Executes the process that arrived first.",
+    sjf: "Shortest Job First: Chooses the process with the smallest burst time.",
+    srtf: "Shortest Remaining Time First: Like SJF but preemptive.",
+    priority: "Priority Scheduling: Chooses the process with highest priority (smallest number).",
+    rr: "Round Robin: Each process gets a time slice for fairness."
   };
-  infoDiv.textContent = infoTexts[algo];
+  infoDiv.textContent = infoTexts[algo] || "";
 }
 
 document.getElementById("algorithm").addEventListener("change", showAlgorithmInfo);
@@ -95,38 +93,37 @@ function simulate() {
 
   processes.forEach(p => p.remaining = p.burst);
 
-  let gantt = [];
-  if (algo === "fcfs") gantt = fcfs(processes);
-  else if (algo === "sjf") gantt = sjf(processes);
-  else if (algo === "srtf") gantt = srtf(processes);
-  else if (algo === "priority") gantt = priorityScheduling(processes);
-  else if (algo === "rr") gantt = roundRobin(processes, quantum);
+  let gantt;
+  switch(algo) {
+    case "fcfs": gantt = fcfs(processes); break;
+    case "sjf": gantt = sjf(processes); break;
+    case "srtf": gantt = srtf(processes); break;
+    case "priority": gantt = priorityScheduling(processes); break;
+    case "rr": gantt = roundRobin(processes, quantum); break;
+    default: gantt = [];
+  }
 
-  const metrics = calculateMetrics(gantt, processes);
+  const metrics = calculateMetrics(gantt);
   renderMetrics(metrics);
   renderGanttAnimated(gantt);
 }
 
-function calculateMetrics(gantt, procs) {
-  const metrics = {};
+function calculateMetrics(gantt) {
   const finishTimes = {};
+  gantt.forEach(b => { if (b.pid !== "Idle") finishTimes[b.pid] = b.end; });
 
-  gantt.forEach(block => {
-    if (block.pid !== "Idle") finishTimes[block.pid] = block.end;
-  });
-
+  const metrics = {};
   let totalBurst = 0;
-  procs.forEach(p => {
+
+  processes.forEach(p => {
     const tat = finishTimes[p.pid] - p.arrival;
     const wt = tat - p.burst;
     metrics[p.pid] = { waitingTime: wt, turnaroundTime: tat };
     totalBurst += p.burst;
   });
 
-  const totalTime = gantt[gantt.length-1].end;
-  const cpuUtil = ((totalBurst / totalTime) * 100).toFixed(2);
-
-  metrics.cpuUtilization = cpuUtil;
+  const totalTime = gantt[gantt.length - 1]?.end || 0;
+  metrics.cpuUtilization = ((totalBurst / totalTime) * 100).toFixed(2);
   metrics.totalTime = totalTime;
   return metrics;
 }
@@ -135,10 +132,8 @@ function renderMetrics(metrics) {
   const tbody = document.querySelector("#metrics-table tbody");
   tbody.innerHTML = "";
 
-  const wtValues = processes.map(p => metrics[p.pid].waitingTime);
-  const tatValues = processes.map(p => metrics[p.pid].turnaroundTime);
-  const maxWT = Math.max(...wtValues);
-  const minTAT = Math.min(...tatValues);
+  const maxWT = Math.max(...processes.map(p => metrics[p.pid].waitingTime));
+  const minTAT = Math.min(...processes.map(p => metrics[p.pid].turnaroundTime));
 
   processes.forEach(p => {
     const tr = document.createElement("tr");
@@ -157,51 +152,53 @@ function renderMetrics(metrics) {
     `CPU Utilization: ${metrics.cpuUtilization}% | Total Time: ${metrics.totalTime}`;
 }
 
-function fcfs(procList) {
-  let sorted = [...procList].sort((a,b)=>a.arrival-b.arrival);
+function fcfs(procs) {
   let time = 0, gantt = [];
-  for (let p of sorted) {
-    if (time < p.arrival) {
-      gantt.push({ pid: "Idle", start: time, end: p.arrival });
-      time = p.arrival;
-    }
+  [...procs].sort((a, b) => a.arrival - b.arrival).forEach(p => {
+    if (time < p.arrival) gantt.push({ pid: "Idle", start: time, end: p.arrival }), time = p.arrival;
     gantt.push({ pid: p.pid, start: time, end: time + p.burst });
     time += p.burst;
-  }
+  });
   return gantt;
 }
 
 function sjf(procList) {
-  let procs = [...procList].map(p => ({ ...p }));
-  let time = 0, completed = [], gantt = [];
+  const procs = procList.map(p => ({ ...p }));
+  const gantt = [];
+  const completed = [];
+  let time = 0;
+
   while (completed.length < procs.length) {
-    let available = procs.filter(p => p.arrival <= time && !completed.includes(p));
+    const available = procs.filter(p => p.arrival <= time && !completed.includes(p));
     if (!available.length) {
       const nextArrival = Math.min(...procs.filter(p => !completed.includes(p)).map(p => p.arrival));
       gantt.push({ pid: "Idle", start: time, end: nextArrival });
       time = nextArrival;
       continue;
     }
-    let next = available.reduce((prev, curr) => curr.burst < prev.burst ? curr : prev);
+    const next = available.reduce((a, b) => a.burst < b.burst ? a : b);
     gantt.push({ pid: next.pid, start: time, end: time + next.burst });
     completed.push(next);
     time += next.burst;
   }
+
   return gantt;
 }
 
 function srtf(procList) {
-  let procs = procList.map(p => ({ ...p, remaining: p.burst }));
-  let time = 0, completed = 0, gantt = [];
+  const procs = procList.map(p => ({ ...p, remaining: p.burst }));
+  const gantt = [];
+  let time = 0, completed = 0;
+
   while (completed < procs.length) {
-    let available = procs.filter(p => p.arrival <= time && p.remaining > 0);
+    const available = procs.filter(p => p.arrival <= time && p.remaining > 0);
     if (!available.length) {
       const nextArrival = Math.min(...procs.filter(p => p.remaining > 0).map(p => p.arrival));
       gantt.push({ pid: "Idle", start: time, end: nextArrival });
       time = nextArrival;
       continue;
     }
-    let next = available.reduce((prev, curr) => curr.remaining < prev.remaining ? curr : prev);
+    const next = available.reduce((a, b) => a.remaining < b.remaining ? a : b);
     gantt.push({ pid: next.pid, start: time, end: time + 1 });
     next.remaining--;
     if (next.remaining === 0) completed++;
@@ -209,54 +206,60 @@ function srtf(procList) {
   }
 
   return gantt.reduce((acc, curr) => {
-    const last = acc[acc.length-1];
+    const last = acc[acc.length - 1];
     if (last && last.pid === curr.pid) last.end++;
-    else acc.push({...curr});
+    else acc.push({ ...curr });
     return acc;
   }, []);
 }
 
 function priorityScheduling(procList) {
-  let procs = [...procList].sort((a,b)=>a.arrival-b.arrival), time=0, completed=[], gantt=[];
+  const procs = [...procList].sort((a, b) => a.arrival - b.arrival);
+  const gantt = [];
+  const completed = [];
+  let time = 0;
+
   while (completed.length < procs.length) {
-    let available = procs.filter(p=>p.arrival<=time && !completed.includes(p));
+    const available = procs.filter(p => p.arrival <= time && !completed.includes(p));
     if (!available.length) {
-      const nextArrival = Math.min(...procs.filter(p=>!completed.includes(p)).map(p=>p.arrival));
-      gantt.push({ pid:"Idle", start:time, end:nextArrival });
+      const nextArrival = Math.min(...procs.filter(p => !completed.includes(p)).map(p => p.arrival));
+      gantt.push({ pid: "Idle", start: time, end: nextArrival });
       time = nextArrival;
       continue;
     }
-    let next = available.sort((a,b)=>a.priority-b.priority)[0];
-    gantt.push({ pid:next.pid, start:time, end:time+next.burst });
+    const next = available.sort((a, b) => a.priority - b.priority)[0];
+    gantt.push({ pid: next.pid, start: time, end: time + next.burst });
     completed.push(next);
     time += next.burst;
   }
+
   return gantt;
 }
 
 function roundRobin(procList, quantum) {
-  let procs = procList.map(p=>({...p, remaining:p.burst}));
-  let time=0, gantt=[], completed=0;
-  while(completed<procs.length){
-    let executed=false;
-    for(let p of procs){
-      if(p.arrival<=time && p.remaining>0){
-        const exec=Math.min(quantum,p.remaining);
-        gantt.push({pid:p.pid,start:time,end:time+exec});
-        p.remaining-=exec;
-        time+=exec;
-        executed=true;
-        if(p.remaining===0)completed++;
+  const procs = procList.map(p => ({ ...p, remaining: p.burst }));
+  const gantt = [];
+  let time = 0, completed = 0;
+
+  while (completed < procs.length) {
+    let executed = false;
+    for (const p of procs) {
+      if (p.arrival <= time && p.remaining > 0) {
+        const exec = Math.min(quantum, p.remaining);
+        gantt.push({ pid: p.pid, start: time, end: time + exec });
+        p.remaining -= exec;
+        time += exec;
+        executed = true;
+        if (p.remaining === 0) completed++;
       }
     }
-    if(!executed){
-      const nextArrival=Math.min(...procs.filter(p=>p.remaining>0).map(p=>p.arrival));
-      if(time<nextArrival){
-        gantt.push({pid:"Idle",start:time,end:nextArrival});
-        time=nextArrival;
-      } else time++;
+    if (!executed) {
+      const nextArrival = Math.min(...procs.filter(p => p.remaining > 0).map(p => p.arrival));
+      if (time < nextArrival) gantt.push({ pid: "Idle", start: time, end: nextArrival }), time = nextArrival;
+      else time++;
     }
   }
+
   return gantt;
 }
 
@@ -268,30 +271,23 @@ async function renderGanttAnimated(gantt, speed = 1) {
 
   const widthPerUnit = 40;
 
-  for (let block of gantt) {
+  for (const block of gantt) {
     const div = document.createElement("div");
     div.className = "process-block";
-    div.style.width = "0px";
-    div.style.height = "40px";
-    div.style.border = "2px solid #333";
-    div.style.display = "flex";
-    div.style.alignItems = "center";
-    div.style.justifyContent = "center";
-    div.style.fontWeight = "bold";
-    div.style.fontSize = "16px";
-    div.style.borderRadius = "6px";
-
-    if (block.pid === "Idle") {
-      div.style.background = "#bfbfbf";
-      div.style.color = "#000";
-      div.textContent = "Idle";
-    } else {
-      const p = processes.find(x => x.pid === block.pid);
-      div.style.background = p ? p.color : "#999";
-      div.style.color = "#fff";
-      div.textContent = block.pid;
-    }
-
+    Object.assign(div.style, {
+      width: "0px",
+      height: "40px",
+      border: "2px solid #333",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontWeight: "bold",
+      fontSize: "16px",
+      borderRadius: "6px",
+      background: block.pid === "Idle" ? "#bfbfbf" : (processes.find(p => p.pid === block.pid)?.color || "#999"),
+      color: block.pid === "Idle" ? "#000" : "#fff",
+    });
+    div.textContent = block.pid;
     chart.appendChild(div);
 
     const totalUnits = block.end - block.start;
@@ -299,51 +295,28 @@ async function renderGanttAnimated(gantt, speed = 1) {
 
     for (let i = 1; i <= totalUnits; i++) {
       await new Promise(res => setTimeout(res, durationPerUnit));
-      div.style.width = (widthPerUnit * i) + "px";
-
-
+      div.style.width = widthPerUnit * i + "px";
       if (block.pid !== "Idle") {
         const p = processes.find(x => x.pid === block.pid);
         if (p) p.remaining = Math.max(p.remaining - 1, 0);
       }
-
-
       renderProcessTable();
       currentTimeDiv.textContent = `Time: ${block.start + i}`;
     }
   }
-
-  currentTimeDiv.textContent = `Time: ${gantt[gantt.length-1].end}`;
+  currentTimeDiv.textContent = `Time: ${gantt[gantt.length - 1]?.end || 0}`;
 }
 
-
-function animateBlock(element, targetWidth, duration) {
-  return new Promise(resolve => {
-    let start = null;
-    function step(timestamp) {
-      if (!start) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      element.style.width = (targetWidth * progress) + "px";
-      if (progress < 1) requestAnimationFrame(step);
-      else resolve();
-    }
-    requestAnimationFrame(step);
-  });
-}
-
-function renderProcessTable(){
+function renderProcessTable() {
   const tbody = document.getElementById("process-table-body");
   tbody.innerHTML = "";
   processes.forEach(p => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td>
-        <span style="background:${p.color};display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;"></span>
-        ${p.pid}
-      </td>
+      <td><span style="background:${p.color};display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;"></span>${p.pid}</td>
       <td>${p.arrival}</td>
       <td>${p.burst}</td>
-      <td>${Math.max(p.remaining,0)}</td>
+      <td>${Math.max(p.remaining, 0)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -354,32 +327,17 @@ function buildLegend() {
   if (!legendContainer) return;
   legendContainer.innerHTML = "";
 
-  // Regular process colors
-  processes.forEach(p => {
-    const item = document.createElement("div");
-    item.className = "legend-item";
-    item.innerHTML = `
-      <span class="legend-color" style="background:${p.color};"></span>
-      <span>${p.pid}</span>
-    `;
-    legendContainer.appendChild(item);
+  const items = [
+    ...processes.map(p => ({ color: p.color, label: p.pid })),
+    { color: "#bfbfbf", label: "Idle (CPU not working)" },
+    { color: "#ffd6d6", label: "Highest waiting time", border: "#c00" },
+    { color: "#d6ffd6", label: "Lowest turnaround time", border: "#0a0" },
+  ];
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "legend-item";
+    div.innerHTML = `<span class="legend-color" style="background:${item.color};${item.border ? "border:1px solid " + item.border : ""}"></span><span>${item.label}</span>`;
+    legendContainer.appendChild(div);
   });
-
-  // Idle bar
-  const idleItem = document.createElement("div");
-  idleItem.className = "legend-item";
-  idleItem.innerHTML = `<span class="legend-color" style="background:#bfbfbf;"></span><span>Idle (CPU not working)</span>`;
-  legendContainer.appendChild(idleItem);
-
-
-
-  const highWT = document.createElement("div");
-  highWT.className = "legend-item";
-  highWT.innerHTML = `<span class="legend-color" style="background:#ffd6d6;border:1px solid #c00;"></span><span>Highest waiting time</span>`;
-  legendContainer.appendChild(highWT);
-
-  const lowTAT = document.createElement("div");
-  lowTAT.className = "legend-item";
-  lowTAT.innerHTML = `<span class="legend-color" style="background:#d6ffd6;border:1px solid #0a0;"></span><span>Lowest turnaround time</span>`;
-  legendContainer.appendChild(lowTAT);
 }
