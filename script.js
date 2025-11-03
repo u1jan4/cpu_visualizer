@@ -1,19 +1,17 @@
 let processes = [];
 
-// 🎨 Unified dark, clear color palette
 const COLOR_PALETTE = [
-  "#1976D2", // blue
-  "#388E3C", // green
-  "#F57C00", // orange
-  "#7B1FA2", // purple
-  "#C62828", // red
-  "#00897B", // teal
-  "#5D4037", // brown
-  "#FBC02D", // yellow
-  "#455A64"  // gray-blue
+  "#1976D2",
+  "#388E3C",
+  "#F57C00",
+  "#7B1FA2",
+  "#C62828",
+  "#00897B",
+  "#5D4037",
+  "#FBC02D",
+  "#455A64"
 ];
 
-// -------------------- INITIALIZATION --------------------
 document.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("processes");
   if (saved) {
@@ -21,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     assignColors();
     renderTaskList();
     buildLegend();
+    renderProcessTable();
   }
   showAlgorithmInfo();
 });
@@ -33,7 +32,6 @@ function assignColors() {
   processes.forEach((p, i) => p.color = COLOR_PALETTE[i % COLOR_PALETTE.length]);
 }
 
-// -------------------- PROCESS MANAGEMENT --------------------
 function addProcess() {
   const pid = document.getElementById("pid").value.trim();
   const arrival = parseInt(document.getElementById("arrival").value);
@@ -52,6 +50,7 @@ function addProcess() {
   buildLegend();
 
   ["pid","arrival","burst","priority"].forEach(id => document.getElementById(id).value = "");
+  renderProcessTable();
 }
 
 function renderTaskList() {
@@ -75,7 +74,6 @@ function renderTaskList() {
   buildLegend();
 }
 
-// -------------------- ALGORITHM INFO --------------------
 function showAlgorithmInfo() {
   const algo = document.getElementById("algorithm").value;
   const infoDiv = document.getElementById("algorithm-info");
@@ -91,7 +89,6 @@ function showAlgorithmInfo() {
 
 document.getElementById("algorithm").addEventListener("change", showAlgorithmInfo);
 
-// -------------------- SIMULATION --------------------
 function simulate() {
   const algo = document.getElementById("algorithm").value;
   const quantum = parseInt(document.getElementById("quantum").value) || 1;
@@ -110,7 +107,6 @@ function simulate() {
   renderGanttAnimated(gantt);
 }
 
-// -------------------- METRICS --------------------
 function calculateMetrics(gantt, procs) {
   const metrics = {};
   const finishTimes = {};
@@ -139,7 +135,6 @@ function renderMetrics(metrics) {
   const tbody = document.querySelector("#metrics-table tbody");
   tbody.innerHTML = "";
 
-  // find highest waiting and lowest turnaround
   const wtValues = processes.map(p => metrics[p.pid].waitingTime);
   const tatValues = processes.map(p => metrics[p.pid].turnaroundTime);
   const maxWT = Math.max(...wtValues);
@@ -162,7 +157,6 @@ function renderMetrics(metrics) {
     `CPU Utilization: ${metrics.cpuUtilization}% | Total Time: ${metrics.totalTime}`;
 }
 
-// -------------------- ALGORITHMS --------------------
 function fcfs(procList) {
   let sorted = [...procList].sort((a,b)=>a.arrival-b.arrival);
   let time = 0, gantt = [];
@@ -213,7 +207,7 @@ function srtf(procList) {
     if (next.remaining === 0) completed++;
     time++;
   }
-  // Merge consecutive same PID blocks
+
   return gantt.reduce((acc, curr) => {
     const last = acc[acc.length-1];
     if (last && last.pid === curr.pid) last.end++;
@@ -266,7 +260,6 @@ function roundRobin(procList, quantum) {
   return gantt;
 }
 
-// -------------------- VISUALIZATION --------------------
 async function renderGanttAnimated(gantt, speed = 1) {
   const chart = document.getElementById("gantt-chart");
   const currentTimeDiv = document.getElementById("current-time");
@@ -274,6 +267,7 @@ async function renderGanttAnimated(gantt, speed = 1) {
   currentTimeDiv.textContent = "Time: 0";
 
   const widthPerUnit = 40;
+
   for (let block of gantt) {
     const div = document.createElement("div");
     div.className = "process-block";
@@ -297,17 +291,32 @@ async function renderGanttAnimated(gantt, speed = 1) {
       div.style.color = "#fff";
       div.textContent = block.pid;
     }
+
     chart.appendChild(div);
 
-    const duration = Math.max((block.end - block.start) * 400 / speed, 200);
-    const totalWidth = (block.end - block.start) * widthPerUnit;
-    await animateBlock(div, totalWidth, duration);
+    const totalUnits = block.end - block.start;
+    const durationPerUnit = Math.max(400 / speed, 50);
+
+    for (let i = 1; i <= totalUnits; i++) {
+      await new Promise(res => setTimeout(res, durationPerUnit));
+      div.style.width = (widthPerUnit * i) + "px";
+
+
+      if (block.pid !== "Idle") {
+        const p = processes.find(x => x.pid === block.pid);
+        if (p) p.remaining = Math.max(p.remaining - 1, 0);
+      }
+
+
+      renderProcessTable();
+      currentTimeDiv.textContent = `Time: ${block.start + i}`;
+    }
   }
 
   currentTimeDiv.textContent = `Time: ${gantt[gantt.length-1].end}`;
 }
 
-// animation helper
+
 function animateBlock(element, targetWidth, duration) {
   return new Promise(resolve => {
     let start = null;
@@ -322,16 +331,20 @@ function animateBlock(element, targetWidth, duration) {
   });
 }
 
-function renderProcessTable() {
+function renderProcessTable(){
   const tbody = document.getElementById("process-table-body");
   tbody.innerHTML = "";
   processes.forEach(p => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td><span style="background:${p.color};display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;"></span>${p.pid}</td>
+      <td>
+        <span style="background:${p.color};display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;"></span>
+        ${p.pid}
+      </td>
       <td>${p.arrival}</td>
       <td>${p.burst}</td>
-      <td>${Math.max(p.remaining,0)}</td>`;
+      <td>${Math.max(p.remaining,0)}</td>
+    `;
     tbody.appendChild(tr);
   });
 }
