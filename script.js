@@ -354,40 +354,60 @@ function goToSimulator() {
         document.getElementById("simulator-screen").classList.add("visible");
     }, 400);
 }
-const bubbles = document.querySelectorAll(".schedule-bubble");
+document.addEventListener("DOMContentLoaded", () => {
 
-const positions = [
-  { top: "20%", left: "10%" },
-  { top: "20%", left: "75%" },
-  { top: "65%", left: "20%" },
-  { top: "65%", left: "65%" },
-  { top: "10%", left: "42%" }
-];
+  const bubbles = document.querySelectorAll(".schedule-bubble");
 
-bubbles.forEach((bubble, i) => {
-  bubble.style.top = positions[i].top;
-  bubble.style.left = positions[i].left;
+  const positions = [
+    { top: "20%", left: "10%" },
+    { top: "20%", left: "75%" },
+    { top: "65%", left: "20%" },
+    { top: "65%", left: "65%" },
+    { top: "10%", left: "42%" }
+  ];
 
-  // Create label and explanation
-  const label = document.createElement("div");
-  label.className = "bubble-label";
-  label.textContent = bubble.dataset.label;
+  bubbles.forEach((bubble, i) => {
+    bubble.style.top = positions[i].top;
+    bubble.style.left = positions[i].left;
 
-  const text = document.createElement("div");
-  text.className = "bubble-text";
-  text.textContent = bubble.dataset.text;
+    const label = document.createElement("div");
+    label.className = "bubble-label";
+    label.textContent = bubble.dataset.label;
 
-  bubble.appendChild(label);
-  bubble.appendChild(text);
-});
+    const text = document.createElement("div");
+    text.className = "bubble-text";
+    text.textContent = bubble.dataset.text;
 
-// Click handler
+    bubble.appendChild(label);
+    bubble.appendChild(text);
+  });
+
+  // Click handler
 bubbles.forEach(bubble => {
   bubble.addEventListener("click", () => {
-    bubbles.forEach(b => b.classList.remove("active"));
+    // Deactivate all bubbles
+    bubbles.forEach(b => b.classList.remove("active", "dim"));
+
     bubble.classList.add("active");
+
+    // Animate
+    const button = bubble.querySelector(".bubble-action");
+    if (button) {
+      button.style.opacity = 0;
+      button.style.transform = "translateY(80px)";
+
+      setTimeout(() => {
+        button.style.transition = "opacity 0.9s ease, transform 0.9s ease";
+        button.style.opacity = 1;
+        button.style.transform = "translateY(-10)";
+      }, 1500);
+    }
   });
 });
+
+
+});
+
 //"Try it out" buttons
 document.querySelectorAll(".bubble-action").forEach(btn => {
   btn.addEventListener("click", e => {
@@ -416,7 +436,32 @@ const explanationScreen = document.querySelector(".explanation-screen");
 startBtn.addEventListener("click", () => {
   welcomeScreen.classList.remove("visible");
 
-  explanationScreen.classList.add("visible");
+  explanationScreen.style.display = "flex";
 
-  explanationScreen.style.display = "flex"; 
+  setTimeout(() => {
+    explanationScreen.classList.add("visible");
+    showExplanationScreen(); //
+  }, 200);
+});
+
+function showExplanationScreen() {
+    const screen = document.querySelector('.explanation-screen');
+    const bubbles = document.querySelectorAll('.schedule-bubble');
+
+bubbles.forEach((bubble, i) => {
+  setTimeout(() => {
+    bubble.classList.add('show');
+  }, i * 250);
+});
+
+}
+window.addEventListener("DOMContentLoaded", () => {
+  const sim = document.querySelector(".simulation-container");
+  sim.classList.add("visible");
+
+  setTimeout(() => {
+    document.querySelector("#gantt-chart").classList.add("visible");
+    document.querySelector("#process-table").classList.add("visible");
+    document.querySelector("#metrics-table").classList.add("visible");
+  }, 500); 
 });
