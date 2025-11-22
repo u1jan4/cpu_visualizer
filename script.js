@@ -341,3 +341,82 @@ function buildLegend() {
     legendContainer.appendChild(div);
   });
 }
+function goToExplanation() {
+    document.getElementById("welcome-screen").classList.remove("visible");
+    setTimeout(() => {
+        document.getElementById("explanation-screen").classList.add("visible");
+    }, 400);
+}
+
+function goToSimulator() {
+    document.getElementById("explanation-screen").classList.remove("visible");
+    setTimeout(() => {
+        document.getElementById("simulator-screen").classList.add("visible");
+    }, 400);
+}
+const bubbles = document.querySelectorAll(".schedule-bubble");
+
+const positions = [
+  { top: "20%", left: "10%" },
+  { top: "20%", left: "75%" },
+  { top: "65%", left: "20%" },
+  { top: "65%", left: "65%" },
+  { top: "10%", left: "42%" }
+];
+
+bubbles.forEach((bubble, i) => {
+  bubble.style.top = positions[i].top;
+  bubble.style.left = positions[i].left;
+
+  // Create label and explanation
+  const label = document.createElement("div");
+  label.className = "bubble-label";
+  label.textContent = bubble.dataset.label;
+
+  const text = document.createElement("div");
+  text.className = "bubble-text";
+  text.textContent = bubble.dataset.text;
+
+  bubble.appendChild(label);
+  bubble.appendChild(text);
+});
+
+// Click handler
+bubbles.forEach(bubble => {
+  bubble.addEventListener("click", () => {
+    bubbles.forEach(b => b.classList.remove("active"));
+    bubble.classList.add("active");
+  });
+});
+//"Try it out" buttons
+document.querySelectorAll(".bubble-action").forEach(btn => {
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    const bubble = btn.closest(".schedule-bubble");
+    const algo = bubble.dataset.algo;
+
+    document.getElementById("algorithm").value = algo;
+    showAlgorithmInfo();
+
+    explanationScreen.classList.remove("visible");
+    setTimeout(() => {
+      explanationScreen.style.display = "none";
+      document.getElementById("simulator-screen").style.display = "flex";
+      setTimeout(() => document.getElementById("simulator-screen").classList.add("visible"), 50);
+
+      simulate();
+    }, 400);
+  });
+});
+
+const startBtn = document.getElementById("start-btn");
+const welcomeScreen = document.querySelector(".welcome-screen");
+const explanationScreen = document.querySelector(".explanation-screen");
+
+startBtn.addEventListener("click", () => {
+  welcomeScreen.classList.remove("visible");
+
+  explanationScreen.classList.add("visible");
+
+  explanationScreen.style.display = "flex"; 
+});
