@@ -418,3 +418,78 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
   document.getElementById(id).classList.add('visible');
 }
+// INTROOOOO
+const INTRO_MESSAGES = [
+  "Hello, everyone!",
+  "Today you will explore different types of CPU scheduling algorithms.",
+  "This visualizer will help you understand CPU scheduling step-by-step in a fun way.",
+  "Created by: Uljana, Ernests and Marat :)",
+   "Enjoy!"
+];
+
+const TYPING_SPEED = 60;
+const BETWEEN_MSG_DELAY = 2000;
+
+function typeMessage(element, message, speed = TYPING_SPEED) {
+  return new Promise(resolve => {
+    element.textContent = "";
+    let i = 0;
+    function step() {
+      if (i < message.length) {
+        element.textContent += message[i++];
+        setTimeout(step, speed);
+      } else {
+        resolve();
+      }
+    }
+    step();
+  });
+}
+
+async function playIntroSequence() {
+  const introScreen = document.getElementById("intro-screen");
+  const introText = document.getElementById("intro-text");
+
+  introScreen.style.display = "flex";
+  await new Promise(r => setTimeout(r, 200));
+  introScreen.classList.add("visible");
+
+  for (let i = 0; i < INTRO_MESSAGES.length; i++) {
+    const msg = INTRO_MESSAGES[i];
+    await typeMessage(introText, msg);
+
+    await new Promise(r => setTimeout(r, BETWEEN_MSG_DELAY));
+
+    if (i < INTRO_MESSAGES.length - 1) {
+      introText.style.opacity = "0";
+      await new Promise(r => setTimeout(r, 300));
+      introText.style.opacity = "1";
+      introText.textContent = "";
+    }
+  }
+
+  introScreen.classList.remove("visible");
+  await new Promise(r => setTimeout(r, 350));
+  introScreen.style.display = "none";
+  document.getElementById("welcome-screen").classList.add("visible");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const saved = localStorage.getItem("processes");
+  if (saved) {
+    processes = JSON.parse(saved);
+    assignColors();
+    renderAll();
+  }
+
+  try {
+    await playIntroSequence();
+  } catch (err) {
+    document.getElementById("intro-screen").style.display = "none";
+    document.getElementById("welcome-screen").classList.add("visible");
+  }
+
+  setupScreens();
+  setupBubbles();
+  showAlgorithmInfo();
+});

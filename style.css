@@ -43,6 +43,7 @@ body {
 
 /* FULLSCREEN SCREEN STYLE */
 .screen {
+  transition: opacity 0.8s ease;
   position: fixed;
   top: 0;
   left: 0;
@@ -267,6 +268,7 @@ button.glow-idle {
   width: 220px;
   height: 220px;
   cursor: pointer;
+  animation: float 4s ease-in-out infinite;
   transition: all 1.2s ease;
   box-shadow: 0 0 15px var(--glow-normal);
   overflow: hidden;
@@ -363,7 +365,7 @@ button.glow-idle {
   font-size: 1rem;
   color: white;
   cursor: pointer;
-  transition: all .4s ease;
+  transition: opacity 1s ease;
   box-shadow: 0 0 20px var(--glow-normal);
   backdrop-filter: blur(10px);
 }
@@ -707,4 +709,44 @@ button.glow-idle {
   width: 18px;
   height: 14px;
   border-radius: 4px;
+}
+/*INTROO*/
+#intro-screen {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  font-size: 2rem;
+  padding: 20px;
+  color: white;
+  opacity: 1;
+  transition: opacity 1s ease;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(16px);
+}
+
+.intro-text {
+font-family: 'Courier New', Courier, monospace;
+  font-size: 2.4rem;
+  font-weight: 300;
+  max-width: 80%;
+  text-align: center;
+  line-height: 1.4;
+  color:  #00f0ff;
+  opacity: 1;
+  transition: opacity 1s ease;
+  transform: translateY(10px);
+}
+#intro-text.glow {
+  text-shadow: 0 0 8px rgba(255,255,255,0.35);
+}
+#intro-text::after {
+  content: '|';
+  animation: blink 1s step-start infinite;
+  color: #00f0ff;
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0; }
 }
