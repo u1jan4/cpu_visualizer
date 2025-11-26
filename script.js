@@ -12,9 +12,45 @@ document.addEventListener("DOMContentLoaded", () => {
     assignColors();
     renderAll();
   }
+  setupScreens();
+  setupBubbles();
   showAlgorithmInfo();
 });
 
+// SCREEN NAVIGATION
+function setupScreens() {
+  const startBtn = document.getElementById("start-btn");
+  const welcomeScreen = document.getElementById("welcome-screen");
+  const explanationScreen = document.getElementById("explanation-screen");
+
+  startBtn.addEventListener("click", () => {
+    welcomeScreen.classList.remove("visible");
+    explanationScreen.style.display = "flex";
+    setTimeout(() => {
+      explanationScreen.classList.add("visible");
+      animateBubbles();
+    }, 200);
+  });
+}
+
+function animateBubbles() {
+  const bubbles = document.querySelectorAll('.schedule-bubble');
+  bubbles.forEach((bubble, i) => {
+    setTimeout(() => bubble.classList.add('show'), i * 250);
+  });
+}
+
+function goToTaskScreen() {
+  document.getElementById("analytics-screen").classList.remove("visible");
+  document.getElementById("task-screen").classList.add("visible");
+}
+
+function goToAnalytics() {
+  document.getElementById("task-screen").classList.remove("visible");
+  document.getElementById("analytics-screen").classList.add("visible");
+}
+
+//PROCESS MANAGEMENT
 function saveProcesses() {
   localStorage.setItem("processes", JSON.stringify(processes));
 }
@@ -54,11 +90,9 @@ function renderAll() {
 function renderTaskList() {
   const taskList = document.getElementById("task-list");
   taskList.innerHTML = "";
-
   processes.forEach(p => {
     const li = document.createElement("li");
     li.innerHTML = `<strong style="color:${p.color}">${p.pid}</strong> — Arrival: ${p.arrival}, Burst: ${p.burst}, Priority: ${p.priority}`;
-
     const removeBtn = document.createElement("button");
     removeBtn.textContent = "Remove";
     removeBtn.onclick = () => {
@@ -66,12 +100,12 @@ function renderTaskList() {
       saveProcesses();
       renderAll();
     };
-
     li.appendChild(removeBtn);
     taskList.appendChild(li);
   });
 }
 
+//ALGORITHM INFO
 function showAlgorithmInfo() {
   const algo = document.getElementById("algorithm").value;
   const infoDiv = document.getElementById("algorithm-info");
@@ -82,11 +116,51 @@ function showAlgorithmInfo() {
     priority: "Priority Scheduling: Chooses the process with highest priority (smallest number).",
     rr: "Round Robin: Each process gets a time slice for fairness."
   };
-  infoDiv.textContent = infoTexts[algo] || "";
+  if (infoDiv) infoDiv.textContent = infoTexts[algo] || "";
 }
 
 document.getElementById("algorithm").addEventListener("change", showAlgorithmInfo);
 
+//BUBBLE
+function setupBubbles() {
+  const bubbles = document.querySelectorAll(".schedule-bubble");
+
+  const positions = [
+    { top: "20%", left: "10%" },
+    { top: "20%", left: "75%" },
+    { top: "65%", left: "20%" },
+    { top: "65%", left: "65%" },
+    { top: "10%", left: "42%" }
+  ];
+
+  bubbles.forEach((bubble, i) => {
+    bubble.style.position = "absolute";
+    bubble.style.top = positions[i].top;
+    bubble.style.left = positions[i].left;
+
+    bubble.addEventListener("click", () => {
+      bubbles.forEach(b => b.classList.remove("active", "dim"));
+      bubble.classList.add("active");
+    });
+  });
+
+  document.querySelectorAll(".bubble-action").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const algo = btn.closest(".schedule-bubble").dataset.algo;
+      document.getElementById("algorithm").value = algo;
+      showAlgorithmInfo();
+      document.getElementById("explanation-screen").classList.remove("visible");
+      setTimeout(() => {
+        document.getElementById("explanation-screen").style.display = "none";
+        document.getElementById("task-screen").style.display = "flex";
+        setTimeout(() => document.getElementById("task-screen").classList.add("visible"), 50);
+      }, 400);
+    });
+  });
+}
+
+//SIMULATIOnn
 function simulate() {
   const algo = document.getElementById("algorithm").value;
   const quantum = parseInt(document.getElementById("quantum").value) || 1;
@@ -104,24 +178,25 @@ function simulate() {
   }
 
   const metrics = calculateMetrics(gantt);
-  renderMetrics(metrics);
+  goToAnalytics();
   renderGanttAnimated(gantt);
+  renderMetrics(metrics);
+  buildLegend();
+  showScreen('analytics-screen');
 }
 
+//METRICS
 function calculateMetrics(gantt) {
   const finishTimes = {};
   gantt.forEach(b => { if (b.pid !== "Idle") finishTimes[b.pid] = b.end; });
-
   const metrics = {};
   let totalBurst = 0;
-
   processes.forEach(p => {
     const tat = finishTimes[p.pid] - p.arrival;
     const wt = tat - p.burst;
     metrics[p.pid] = { waitingTime: wt, turnaroundTime: tat };
     totalBurst += p.burst;
   });
-
   const totalTime = gantt[gantt.length - 1]?.end || 0;
   metrics.cpuUtilization = ((totalBurst / totalTime) * 100).toFixed(2);
   metrics.totalTime = totalTime;
@@ -131,15 +206,13 @@ function calculateMetrics(gantt) {
 function renderMetrics(metrics) {
   const tbody = document.querySelector("#metrics-table tbody");
   tbody.innerHTML = "";
-
   const maxWT = Math.max(...processes.map(p => metrics[p.pid].waitingTime));
   const minTAT = Math.min(...processes.map(p => metrics[p.pid].turnaroundTime));
 
   processes.forEach(p => {
     const tr = document.createElement("tr");
-    if (metrics[p.pid].waitingTime === maxWT) tr.style.background = "#ffd6d6";
-    if (metrics[p.pid].turnaroundTime === minTAT) tr.style.background = "#d6ffd6";
-
+    if (metrics[p.pid].waitingTime === maxWT) tr.style.background = "#C62828";
+    if (metrics[p.pid].turnaroundTime === minTAT) tr.style.background = "#2E7D32";
     tr.innerHTML = `
       <td><span style="background:${p.color};display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;"></span>${p.pid}</td>
       <td>${metrics[p.pid].waitingTime}</td>
@@ -147,9 +220,19 @@ function renderMetrics(metrics) {
     `;
     tbody.appendChild(tr);
   });
-
   document.getElementById("cpu-utilization").textContent =
     `CPU Utilization: ${metrics.cpuUtilization}% | Total Time: ${metrics.totalTime}`;
+}
+
+//GANTT i ALGORITHMS
+function fcfs(procs) {
+  let time = 0, gantt = [];
+  [...procs].sort((a, b) => a.arrival - b.arrival).forEach(p => {
+    if (time < p.arrival) gantt.push({ pid: "Idle", start: time, end: p.arrival }), time = p.arrival;
+    gantt.push({ pid: p.pid, start: time, end: time + p.burst });
+    time += p.burst;
+  });
+  return gantt;
 }
 
 function fcfs(procs) {
@@ -265,10 +348,7 @@ function roundRobin(procList, quantum) {
 
 async function renderGanttAnimated(gantt, speed = 1) {
   const chart = document.getElementById("gantt-chart");
-  const currentTimeDiv = document.getElementById("current-time");
   chart.innerHTML = "";
-  currentTimeDiv.textContent = "Time: 0";
-
   const widthPerUnit = 40;
 
   for (const block of gantt) {
@@ -296,19 +376,14 @@ async function renderGanttAnimated(gantt, speed = 1) {
     for (let i = 1; i <= totalUnits; i++) {
       await new Promise(res => setTimeout(res, durationPerUnit));
       div.style.width = widthPerUnit * i + "px";
-      if (block.pid !== "Idle") {
-        const p = processes.find(x => x.pid === block.pid);
-        if (p) p.remaining = Math.max(p.remaining - 1, 0);
-      }
-      renderProcessTable();
-      currentTimeDiv.textContent = `Time: ${block.start + i}`;
     }
   }
-  currentTimeDiv.textContent = `Time: ${gantt[gantt.length - 1]?.end || 0}`;
 }
 
+//  TABLE i LEGEND
 function renderProcessTable() {
   const tbody = document.getElementById("process-table-body");
+  if (!tbody) return;
   tbody.innerHTML = "";
   processes.forEach(p => {
     const tr = document.createElement("tr");
@@ -326,14 +401,12 @@ function buildLegend() {
   const legendContainer = document.getElementById("legend-items");
   if (!legendContainer) return;
   legendContainer.innerHTML = "";
-
   const items = [
     ...processes.map(p => ({ color: p.color, label: p.pid })),
     { color: "#bfbfbf", label: "Idle (CPU not working)" },
-    { color: "#ffd6d6", label: "Highest waiting time", border: "#c00" },
-    { color: "#d6ffd6", label: "Lowest turnaround time", border: "#0a0" },
+    { color: "#C62828", label: "Highest waiting time", border:"#C0392B" },
+    { color: "#2E7D32", label: "Lowest turnaround time", border: "#27AE60" },
   ];
-
   items.forEach(item => {
     const div = document.createElement("div");
     div.className = "legend-item";
@@ -341,3 +414,82 @@ function buildLegend() {
     legendContainer.appendChild(div);
   });
 }
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('visible'));
+  document.getElementById(id).classList.add('visible');
+}
+// INTROOOOO
+const INTRO_MESSAGES = [
+  "Hello, everyone!",
+  "Today you will explore different types of CPU scheduling algorithms.",
+  "This visualizer will help you understand CPU scheduling step-by-step in a fun way.",
+  "Created by: Uljana, Ernests and Marat :)",
+   "Enjoy!"
+];
+
+const TYPING_SPEED = 60;
+const BETWEEN_MSG_DELAY = 2000;
+
+function typeMessage(element, message, speed = TYPING_SPEED) {
+  return new Promise(resolve => {
+    element.textContent = "";
+    let i = 0;
+    function step() {
+      if (i < message.length) {
+        element.textContent += message[i++];
+        setTimeout(step, speed);
+      } else {
+        resolve();
+      }
+    }
+    step();
+  });
+}
+
+async function playIntroSequence() {
+  const introScreen = document.getElementById("intro-screen");
+  const introText = document.getElementById("intro-text");
+
+  introScreen.style.display = "flex";
+  await new Promise(r => setTimeout(r, 200));
+  introScreen.classList.add("visible");
+
+  for (let i = 0; i < INTRO_MESSAGES.length; i++) {
+    const msg = INTRO_MESSAGES[i];
+    await typeMessage(introText, msg);
+
+    await new Promise(r => setTimeout(r, BETWEEN_MSG_DELAY));
+
+    if (i < INTRO_MESSAGES.length - 1) {
+      introText.style.opacity = "0";
+      await new Promise(r => setTimeout(r, 300));
+      introText.style.opacity = "1";
+      introText.textContent = "";
+    }
+  }
+
+  introScreen.classList.remove("visible");
+  await new Promise(r => setTimeout(r, 350));
+  introScreen.style.display = "none";
+  document.getElementById("welcome-screen").classList.add("visible");
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  const saved = localStorage.getItem("processes");
+  if (saved) {
+    processes = JSON.parse(saved);
+    assignColors();
+    renderAll();
+  }
+
+  try {
+    await playIntroSequence();
+  } catch (err) {
+    document.getElementById("intro-screen").style.display = "none";
+    document.getElementById("welcome-screen").classList.add("visible");
+  }
+
+  setupScreens();
+  setupBubbles();
+  showAlgorithmInfo();
+});
