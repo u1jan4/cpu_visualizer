@@ -5,6 +5,7 @@ const COLOR_PALETTE = [
   "#00897B", "#5D4037", "#FBC02D", "#455A64"
 ];
 
+
 document.addEventListener("DOMContentLoaded", () => {
   const saved = localStorage.getItem("processes");
   if (saved) {
@@ -12,9 +13,16 @@ document.addEventListener("DOMContentLoaded", () => {
     assignColors();
     renderAll();
   }
+
   setupScreens();
   setupBubbles();
   showAlgorithmInfo();
+
+  document.getElementById("welcome-screen").style.display = "flex";
+  document.getElementById("welcome-screen").classList.add("visible");
+
+  document.getElementById("intro-screen").style.display = "none";
+  document.getElementById("intro-screen").classList.remove("visible");
 });
 
 // SCREEN NAVIGATION
@@ -23,8 +31,9 @@ function setupScreens() {
   const welcomeScreen = document.getElementById("welcome-screen");
   const explanationScreen = document.getElementById("explanation-screen");
 
-  startBtn.addEventListener("click", () => {
-    welcomeScreen.classList.remove("visible");
+  startBtn.addEventListener("click", async () => {
+    welcomeScreen.classList.remove("visible");  
+    await playIntroSequence();                  
     explanationScreen.style.display = "flex";
     setTimeout(() => {
       explanationScreen.classList.add("visible");
@@ -32,6 +41,7 @@ function setupScreens() {
     }, 200);
   });
 }
+
 
 function animateBubbles() {
   const bubbles = document.querySelectorAll('.schedule-bubble');
@@ -160,7 +170,7 @@ function setupBubbles() {
   });
 }
 
-//SIMULATIOnn
+//SIMULATIOnnn
 function simulate() {
   const algo = document.getElementById("algorithm").value;
   const quantum = parseInt(document.getElementById("quantum").value) || 1;
@@ -225,16 +235,6 @@ function renderMetrics(metrics) {
 }
 
 //GANTT i ALGORITHMS
-function fcfs(procs) {
-  let time = 0, gantt = [];
-  [...procs].sort((a, b) => a.arrival - b.arrival).forEach(p => {
-    if (time < p.arrival) gantt.push({ pid: "Idle", start: time, end: p.arrival }), time = p.arrival;
-    gantt.push({ pid: p.pid, start: time, end: time + p.burst });
-    time += p.burst;
-  });
-  return gantt;
-}
-
 function fcfs(procs) {
   let time = 0, gantt = [];
   [...procs].sort((a, b) => a.arrival - b.arrival).forEach(p => {
@@ -423,7 +423,7 @@ const INTRO_MESSAGES = [
   "Hello, everyone!",
   "Today you will explore different types of CPU scheduling algorithms.",
   "This visualizer will help you understand CPU scheduling step-by-step in a fun way.",
-  "Created by: Uljana, Ernests and Marat :)",
+  "Created by: Uljana :)",
    "Enjoy!"
 ];
 
@@ -455,11 +455,8 @@ async function playIntroSequence() {
   introScreen.classList.add("visible");
 
   for (let i = 0; i < INTRO_MESSAGES.length; i++) {
-    const msg = INTRO_MESSAGES[i];
-    await typeMessage(introText, msg);
-
+    await typeMessage(introText, INTRO_MESSAGES[i]);
     await new Promise(r => setTimeout(r, BETWEEN_MSG_DELAY));
-
     if (i < INTRO_MESSAGES.length - 1) {
       introText.style.opacity = "0";
       await new Promise(r => setTimeout(r, 300));
@@ -469,27 +466,12 @@ async function playIntroSequence() {
   }
 
   introScreen.classList.remove("visible");
-  await new Promise(r => setTimeout(r, 350));
-  introScreen.style.display = "none";
-  document.getElementById("welcome-screen").classList.add("visible");
-}
+await new Promise(r => setTimeout(r, 350));
+introScreen.style.display = "none";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const saved = localStorage.getItem("processes");
-  if (saved) {
-    processes = JSON.parse(saved);
-    assignColors();
-    renderAll();
-  }
-
-  try {
-    await playIntroSequence();
-  } catch (err) {
-    document.getElementById("intro-screen").style.display = "none";
-    document.getElementById("welcome-screen").classList.add("visible");
-  }
-
-  setupScreens();
-  setupBubbles();
-  showAlgorithmInfo();
-});
+const explanationScreen = document.getElementById("explanation-screen");
+explanationScreen.style.display = "flex";
+setTimeout(() => {
+  explanationScreen.classList.add("visible");
+  animateBubbles();
+}, 200); }

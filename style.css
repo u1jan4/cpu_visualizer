@@ -65,7 +65,21 @@ body {
   opacity: 1;
 }
 
-#task-screen,
+#task-screen {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+#task-screen.visible {
+  display: flex;
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
 #analytics-screen {
   position: fixed;
   top: 0;
@@ -90,7 +104,6 @@ body {
   z-index: 50;
 }
 
-#task-screen.visible,
 #analytics-screen.visible {
   opacity: 1;
   pointer-events: auto;
@@ -137,6 +150,13 @@ body {
   opacity: 0.7;
   margin-bottom: 30px;
   font-size: 16px;
+}
+#analytics-screen .glass-card {
+    width: 100%;        
+    max-width: 1400px;   
+    padding: 60px 30px;  
+    margin: 0;           
+    border-radius: 0;   
 }
 
 /*BUTTONS*/
@@ -712,7 +732,8 @@ button.glow-idle {
 }
 /*INTROO*/
 #intro-screen {
-  display: none;
+  display: flex;         
+  opacity: 0;  
   justify-content: center;
   align-items: center;
   text-align: center;
@@ -732,7 +753,7 @@ font-family: 'Courier New', Courier, monospace;
   max-width: 80%;
   text-align: center;
   line-height: 1.4;
-  color:  #00f0ff;
+  color:  #4cd964;
   opacity: 1;
   transition: opacity 1s ease;
   transform: translateY(10px);
@@ -743,7 +764,7 @@ font-family: 'Courier New', Courier, monospace;
 #intro-text::after {
   content: '|';
   animation: blink 1s step-start infinite;
-  color: #00f0ff;
+  color: #4cd964;
 }
 
 @keyframes blink {
