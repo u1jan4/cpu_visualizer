@@ -732,7 +732,7 @@ font-family: 'Courier New', Courier, monospace;
   max-width: 80%;
   text-align: center;
   line-height: 1.4;
-  color:  #00f0ff;
+  color:  #4cd964;
   opacity: 1;
   transition: opacity 1s ease;
   transform: translateY(10px);
@@ -743,7 +743,7 @@ font-family: 'Courier New', Courier, monospace;
 #intro-text::after {
   content: '|';
   animation: blink 1s step-start infinite;
-  color: #00f0ff;
+  color: #4cd964;
 }
 
 @keyframes blink {

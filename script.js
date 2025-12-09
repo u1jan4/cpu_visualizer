@@ -423,7 +423,7 @@ const INTRO_MESSAGES = [
   "Hello, everyone!",
   "Today you will explore different types of CPU scheduling algorithms.",
   "This visualizer will help you understand CPU scheduling step-by-step in a fun way.",
-  "Created by: Uljana, Ernests and Marat :)",
+  "Created by: Uljana :)",
    "Enjoy!"
 ];
 
